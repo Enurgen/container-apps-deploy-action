@@ -139,7 +139,11 @@ inputs:
       this GitHub Action.'
     required: false
     default: false
-
+  disableCreateContainerApp:
+    description: |
+      'If set to "true", the action will fail if the container app does not exist'
+    required: false
+    default: false
 runs:
   using: 'node16'
   main: 'dist/index.js'
