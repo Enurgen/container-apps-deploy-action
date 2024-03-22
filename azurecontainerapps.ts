@@ -240,7 +240,7 @@ export class azurecontainerapps {
               this.toolHelper.setFailed(
                 "container does not exist or failed to get existing container, exiting job"
               );
-              
+              process.exit(1)
               return;
 
             }
