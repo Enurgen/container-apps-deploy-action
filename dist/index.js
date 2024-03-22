@@ -4053,20 +4053,11 @@ var azurecontainerapps = class {
    * @throws Error if a valid combination of the support scenario arguments is not provided.
    */
   static validateSupportedScenarioArguments() {
-    this.appSourcePath = this.toolHelper.getInput(
-      "appSourcePath",
-      false
-    );
+    this.appSourcePath = this.toolHelper.getInput("appSourcePath", false);
     this.acrName = this.toolHelper.getInput("acrName", false);
     this.registryUrl = this.toolHelper.getInput("registryUrl", false);
-    this.imageToDeploy = this.toolHelper.getInput(
-      "imageToDeploy",
-      false
-    );
-    this.yamlConfigPath = this.toolHelper.getInput(
-      "yamlConfigPath",
-      false
-    );
+    this.imageToDeploy = this.toolHelper.getInput("imageToDeploy", false);
+    this.yamlConfigPath = this.toolHelper.getInput("yamlConfigPath", false);
     this.imageToBuild = this.toolHelper.getInput("imageToBuild", false);
     this.buildArguments = this.toolHelper.getInput("buildArguments", false);
     if (this.util.isNullOrEmpty(this.appSourcePath) && this.util.isNullOrEmpty(this.imageToDeploy) && this.util.isNullOrEmpty(this.yamlConfigPath)) {
@@ -4112,27 +4103,18 @@ var azurecontainerapps = class {
   static async setupResources() {
     this.containerAppName = this.getContainerAppName();
     this.location = await this.getLocation();
-    this.resourceGroup = await this.getOrCreateResourceGroup(
-      this.containerAppName,
-      this.location
-    );
-    this.containerAppExists = await this.appHelper.doesContainerAppExist(
-      this.containerAppName,
-      this.resourceGroup
-    );
+    this.resourceGroup = await this.getOrCreateResourceGroup(this.containerAppName, this.location);
+    this.containerAppExists = await this.appHelper.doesContainerAppExist(this.containerAppName, this.resourceGroup);
     if (!this.containerAppExists) {
       const disableCreateContainerApp = this.toolHelper.getInput("disableCreateContainerApp").toLowerCase();
       if (!this.containerAppExists && disableCreateContainerApp === "true") {
         this.toolHelper.setFailed(
           "container does not exist or failed to get existing container, exiting job"
         );
+        process.exit(1);
         return;
       }
-      this.containerAppEnvironment = await this.getOrCreateContainerAppEnvironment(
-        this.containerAppName,
-        this.resourceGroup,
-        this.location
-      );
+      this.containerAppEnvironment = await this.getOrCreateContainerAppEnvironment(this.containerAppName, this.resourceGroup, this.location);
     }
   }
   /**
@@ -4141,10 +4123,7 @@ var azurecontainerapps = class {
    * @returns The name of the Container App to use for the task.
    */
   static getContainerAppName() {
-    let containerAppName = this.toolHelper.getInput(
-      "containerAppName",
-      false
-    );
+    let containerAppName = this.toolHelper.getInput("containerAppName", false);
     if (this.util.isNullOrEmpty(containerAppName)) {
       return this.toolHelper.getDefaultContainerAppName(containerAppName);
     }
@@ -4160,47 +4139,21 @@ var azurecontainerapps = class {
     if (!this.util.isNullOrEmpty(location)) {
       return location;
     }
-    let resourceGroup = this.toolHelper.getInput(
-      "resourceGroup",
-      false
-    );
+    let resourceGroup = this.toolHelper.getInput("resourceGroup", false);
     if (!this.util.isNullOrEmpty(resourceGroup)) {
-      let containerAppExists = await this.appHelper.doesContainerAppExist(
-        this.containerAppName,
-        resourceGroup
-      );
+      let containerAppExists = await this.appHelper.doesContainerAppExist(this.containerAppName, resourceGroup);
       if (containerAppExists) {
-        var environmentName = await this.appHelper.getExistingContainerAppEnvironmentName(
-          this.containerAppName,
-          resourceGroup
-        );
-        var containerAppEnvironmentExistsInResourceGroup = !this.util.isNullOrEmpty(environmentName) ? await this.appHelper.doesContainerAppEnvironmentExist(
-          environmentName,
-          resourceGroup
-        ) : false;
+        var environmentName = await this.appHelper.getExistingContainerAppEnvironmentName(this.containerAppName, resourceGroup);
+        var containerAppEnvironmentExistsInResourceGroup = !this.util.isNullOrEmpty(environmentName) ? await this.appHelper.doesContainerAppEnvironmentExist(environmentName, resourceGroup) : false;
         if (containerAppEnvironmentExistsInResourceGroup) {
-          location = await this.appHelper.getExistingContainerAppEnvironmentLocation(
-            environmentName,
-            resourceGroup
-          );
+          location = await this.appHelper.getExistingContainerAppEnvironmentLocation(environmentName, resourceGroup);
           return location;
         }
       }
-      let containerAppEnvironment = this.toolHelper.getInput(
-        "containerAppEnvironment",
-        false
-      );
-      let containerAppEnvironmentExists = !this.util.isNullOrEmpty(
-        containerAppEnvironment
-      ) ? await this.appHelper.doesContainerAppEnvironmentExist(
-        containerAppEnvironment,
-        resourceGroup
-      ) : false;
+      let containerAppEnvironment = this.toolHelper.getInput("containerAppEnvironment", false);
+      let containerAppEnvironmentExists = !this.util.isNullOrEmpty(containerAppEnvironment) ? await this.appHelper.doesContainerAppEnvironmentExist(containerAppEnvironment, resourceGroup) : false;
       if (containerAppEnvironmentExists) {
-        location = await this.appHelper.getExistingContainerAppEnvironmentLocation(
-          containerAppEnvironment,
-          resourceGroup
-        );
+        location = await this.appHelper.getExistingContainerAppEnvironmentLocation(containerAppEnvironment, resourceGroup);
         return location;
       }
     }
@@ -4216,18 +4169,11 @@ var azurecontainerapps = class {
    * @returns The name of the resource group to use for the task.
    */
   static async getOrCreateResourceGroup(containerAppName, location) {
-    let resourceGroup = this.toolHelper.getInput(
-      "resourceGroup",
-      false
-    );
+    let resourceGroup = this.toolHelper.getInput("resourceGroup", false);
     if (this.util.isNullOrEmpty(resourceGroup)) {
       resourceGroup = `${containerAppName}-rg`;
-      this.toolHelper.writeInfo(
-        `Default resource group name: ${resourceGroup}`
-      );
-      const resourceGroupExists = await this.appHelper.doesResourceGroupExist(
-        resourceGroup
-      );
+      this.toolHelper.writeInfo(`Default resource group name: ${resourceGroup}`);
+      const resourceGroupExists = await this.appHelper.doesResourceGroupExist(resourceGroup);
       if (!resourceGroupExists) {
         await this.appHelper.createResourceGroup(resourceGroup, location);
       }
@@ -4245,35 +4191,21 @@ var azurecontainerapps = class {
    * @returns The name of the Container App Environment to use for the task.
    */
   static async getOrCreateContainerAppEnvironment(containerAppName, resourceGroup, location) {
-    let containerAppEnvironment = this.toolHelper.getInput(
-      "containerAppEnvironment",
-      false
-    );
+    let containerAppEnvironment = this.toolHelper.getInput("containerAppEnvironment", false);
     if (this.util.isNullOrEmpty(containerAppEnvironment)) {
       const existingContainerAppEnvironment = await this.appHelper.getExistingContainerAppEnvironment(resourceGroup);
       if (!this.util.isNullOrEmpty(existingContainerAppEnvironment)) {
-        this.toolHelper.writeInfo(
-          `Existing Container App environment found in resource group: ${existingContainerAppEnvironment}`
-        );
+        this.toolHelper.writeInfo(`Existing Container App environment found in resource group: ${existingContainerAppEnvironment}`);
         return existingContainerAppEnvironment;
       }
     }
     if (this.util.isNullOrEmpty(containerAppEnvironment)) {
       containerAppEnvironment = `${containerAppName}-env`;
-      this.toolHelper.writeInfo(
-        `Default Container App environment name: ${containerAppEnvironment}`
-      );
+      this.toolHelper.writeInfo(`Default Container App environment name: ${containerAppEnvironment}`);
     }
-    const containerAppEnvironmentExists = await this.appHelper.doesContainerAppEnvironmentExist(
-      containerAppEnvironment,
-      resourceGroup
-    );
+    const containerAppEnvironmentExists = await this.appHelper.doesContainerAppEnvironmentExist(containerAppEnvironment, resourceGroup);
     if (!containerAppEnvironmentExists) {
-      await this.appHelper.createContainerAppEnvironment(
-        containerAppEnvironment,
-        resourceGroup,
-        location
-      );
+      await this.appHelper.createContainerAppEnvironment(containerAppEnvironment, resourceGroup, location);
     }
     return containerAppEnvironment;
   }
@@ -4285,18 +4217,10 @@ var azurecontainerapps = class {
     this.registryPassword = this.toolHelper.getInput("acrPassword", false);
     this.registryUrl = `${this.acrName}.azurecr.io`;
     if (!this.util.isNullOrEmpty(this.registryUsername) && !this.util.isNullOrEmpty(this.registryPassword)) {
-      this.toolHelper.writeInfo(
-        `Logging in to ACR instance "${this.acrName}" with username and password credentials`
-      );
-      await this.registryHelper.loginContainerRegistryWithUsernamePassword(
-        this.registryUrl,
-        this.registryUsername,
-        this.registryPassword
-      );
+      this.toolHelper.writeInfo(`Logging in to ACR instance "${this.acrName}" with username and password credentials`);
+      await this.registryHelper.loginContainerRegistryWithUsernamePassword(this.registryUrl, this.registryUsername, this.registryPassword);
     } else {
-      this.toolHelper.writeInfo(
-        `No ACR credentials provided; attempting to log in to ACR instance "${this.acrName}" with access token`
-      );
+      this.toolHelper.writeInfo(`No ACR credentials provided; attempting to log in to ACR instance "${this.acrName}" with access token`);
       await this.registryHelper.loginAcrWithAccessTokenAsync(this.acrName);
     }
   }
@@ -4307,14 +4231,8 @@ var azurecontainerapps = class {
     this.registryUsername = this.toolHelper.getInput("registryUsername", false);
     this.registryPassword = this.toolHelper.getInput("registryPassword", false);
     if (!this.util.isNullOrEmpty(this.registryUsername) && !this.util.isNullOrEmpty(this.registryPassword)) {
-      this.toolHelper.writeInfo(
-        `Logging in to Container Registry "${this.registryUrl}" with username and password credentials`
-      );
-      await this.registryHelper.loginContainerRegistryWithUsernamePassword(
-        this.registryUrl,
-        this.registryUsername,
-        this.registryPassword
-      );
+      this.toolHelper.writeInfo(`Logging in to Container Registry "${this.registryUrl}" with username and password credentials`);
+      await this.registryHelper.loginContainerRegistryWithUsernamePassword(this.registryUrl, this.registryUsername, this.registryPassword);
     }
   }
   /**
@@ -4335,9 +4253,7 @@ var azurecontainerapps = class {
     }
     if (this.util.isNullOrEmpty(this.imageToDeploy)) {
       this.imageToDeploy = this.imageToBuild;
-      this.toolHelper.writeInfo(
-        `Default image to deploy: ${this.imageToDeploy}`
-      );
+      this.toolHelper.writeInfo(`Default image to deploy: ${this.imageToDeploy}`);
     }
     let buildArguments = [];
     if (!this.util.isNullOrEmpty(this.buildArguments)) {
@@ -4345,37 +4261,21 @@ var azurecontainerapps = class {
         buildArguments.push(buildArg);
       });
     }
-    let dockerfilePath = this.toolHelper.getInput(
-      "dockerfilePath",
-      false
-    );
+    let dockerfilePath = this.toolHelper.getInput("dockerfilePath", false);
     if (this.util.isNullOrEmpty(dockerfilePath)) {
-      this.toolHelper.writeInfo(
-        `No Dockerfile path provided; checking for Dockerfile at root of application source.`
-      );
+      this.toolHelper.writeInfo(`No Dockerfile path provided; checking for Dockerfile at root of application source.`);
       const rootDockerfilePath = path2.join(this.appSourcePath, "Dockerfile");
       if (fs2.existsSync(rootDockerfilePath)) {
-        this.toolHelper.writeInfo(
-          `Dockerfile found at root of application source.`
-        );
+        this.toolHelper.writeInfo(`Dockerfile found at root of application source.`);
         dockerfilePath = rootDockerfilePath;
       } else {
-        await this.buildImageFromBuilderAsync(
-          this.appSourcePath,
-          this.imageToBuild,
-          buildArguments
-        );
+        await this.buildImageFromBuilderAsync(this.appSourcePath, this.imageToBuild, buildArguments);
       }
     } else {
       dockerfilePath = path2.join(this.appSourcePath, dockerfilePath);
     }
     if (!this.util.isNullOrEmpty(dockerfilePath)) {
-      await this.buildImageFromDockerfile(
-        this.appSourcePath,
-        dockerfilePath,
-        this.imageToBuild,
-        buildArguments
-      );
+      await this.buildImageFromDockerfile(this.appSourcePath, dockerfilePath, this.imageToBuild, buildArguments);
     }
     await this.registryHelper.pushImageToContainerRegistry(this.imageToBuild);
   }
@@ -4389,9 +4289,7 @@ var azurecontainerapps = class {
     if (buildArguments.length > 0) {
       buildArguments.forEach((buildArg) => {
         const nameAndValue = buildArg.split("=");
-        const isNameValid = nameAndValue[0].match(
-          buildpackEnvironmentNameRegex
-        );
+        const isNameValid = nameAndValue[0].match(buildpackEnvironmentNameRegex);
         if (!isNameValid) {
           const invalidBuildArgumentsMessage = `Build environment variable name must consist of alphanumeric characters, numbers, '_', '.' or '-', start with 'BP_' or 'ORYX_'.`;
           this.toolHelper.writeError(invalidBuildArgumentsMessage);
@@ -4402,9 +4300,7 @@ var azurecontainerapps = class {
     await this.appHelper.installPackCliAsync();
     this.toolHelper.writeInfo(`Successfully installed the pack CLI.`);
     await this.appHelper.enablePackCliExperimentalFeaturesAsync();
-    this.toolHelper.writeInfo(
-      `Successfully enabled experimental features for the pack CLI.`
-    );
+    this.toolHelper.writeInfo(`Successfully enabled experimental features for the pack CLI.`);
     let environmentVariables = [];
     const runtimeStack = this.toolHelper.getInput("runtimeStack", false);
     if (!this.util.isNullOrEmpty(runtimeStack)) {
@@ -4423,16 +4319,9 @@ var azurecontainerapps = class {
         environmentVariables.push(buildArg);
       });
     }
-    this.toolHelper.writeInfo(
-      `Building image "${imageToBuild}" using the Oryx++ Builder`
-    );
+    this.toolHelper.writeInfo(`Building image "${imageToBuild}" using the Oryx++ Builder`);
     await this.appHelper.setDefaultBuilder();
-    await this.appHelper.createRunnableAppImage(
-      imageToBuild,
-      appSourcePath,
-      environmentVariables,
-      builderStack
-    );
+    await this.appHelper.createRunnableAppImage(imageToBuild, appSourcePath, environmentVariables, builderStack);
     this.telemetryHelper.setBuilderScenario();
   }
   /**
@@ -4443,15 +4332,8 @@ var azurecontainerapps = class {
    * @param buildArguments - The build arguments to pass to the docker build command.
    */
   static async buildImageFromDockerfile(appSourcePath, dockerfilePath, imageToBuild, buildArguments) {
-    this.toolHelper.writeInfo(
-      `Building image "${imageToBuild}" using the provided Dockerfile`
-    );
-    await this.appHelper.createRunnableAppImageFromDockerfile(
-      imageToBuild,
-      appSourcePath,
-      dockerfilePath,
-      buildArguments
-    );
+    this.toolHelper.writeInfo(`Building image "${imageToBuild}" using the provided Dockerfile`);
+    await this.appHelper.createRunnableAppImageFromDockerfile(imageToBuild, appSourcePath, dockerfilePath, buildArguments);
     this.telemetryHelper.setDockerfileScenario();
   }
   /**
@@ -4479,9 +4361,7 @@ var azurecontainerapps = class {
       }
       if (this.ingress == "disabled") {
         this.ingressEnabled = false;
-        this.toolHelper.writeInfo(
-          `Ingress is disabled for this Container App.`
-        );
+        this.toolHelper.writeInfo(`Ingress is disabled for this Container App.`);
       }
       if (this.ingressEnabled) {
         this.targetPort = this.toolHelper.getInput("targetPort", false);
@@ -4493,10 +4373,7 @@ var azurecontainerapps = class {
         this.commandLineArgs.push(`--target-port ${this.targetPort}`);
       }
     }
-    const environmentVariables = this.toolHelper.getInput(
-      "environmentVariables",
-      false
-    );
+    const environmentVariables = this.toolHelper.getInput("environmentVariables", false);
     const isCappUpdateCommandUsed = this.noIngressUpdate || !this.noIngressUpdate && !this.adminCredentialsProvided;
     if (!this.util.isNullOrEmpty(environmentVariables)) {
       if (isCappUpdateCommandUsed) {
@@ -4518,82 +4395,33 @@ var azurecontainerapps = class {
   static async createOrUpdateContainerApp() {
     if (!this.containerAppExists) {
       if (!this.util.isNullOrEmpty(this.yamlConfigPath)) {
-        await this.appHelper.createContainerAppFromYaml(
-          this.containerAppName,
-          this.resourceGroup,
-          this.yamlConfigPath
-        );
+        await this.appHelper.createContainerAppFromYaml(this.containerAppName, this.resourceGroup, this.yamlConfigPath);
       } else if (this.shouldCreateOrUpdateContainerAppWithUp) {
-        await this.appHelper.createOrUpdateContainerAppWithUp(
-          this.containerAppName,
-          this.resourceGroup,
-          this.commandLineArgs
-        );
+        await this.appHelper.createOrUpdateContainerAppWithUp(this.containerAppName, this.resourceGroup, this.commandLineArgs);
       } else {
-        await this.appHelper.createContainerApp(
-          this.containerAppName,
-          this.resourceGroup,
-          this.containerAppEnvironment,
-          this.commandLineArgs
-        );
+        await this.appHelper.createContainerApp(this.containerAppName, this.resourceGroup, this.containerAppEnvironment, this.commandLineArgs);
       }
       return;
     }
     if (!this.util.isNullOrEmpty(this.yamlConfigPath)) {
-      await this.appHelper.updateContainerAppFromYaml(
-        this.containerAppName,
-        this.resourceGroup,
-        this.yamlConfigPath
-      );
+      await this.appHelper.updateContainerAppFromYaml(this.containerAppName, this.resourceGroup, this.yamlConfigPath);
       return;
     }
     if (this.noIngressUpdate && !this.shouldCreateOrUpdateContainerAppWithUp) {
       if (!this.util.isNullOrEmpty(this.registryUrl) && !this.util.isNullOrEmpty(this.registryUsername) && !this.util.isNullOrEmpty(this.registryPassword)) {
-        await this.appHelper.updateContainerAppRegistryDetails(
-          this.containerAppName,
-          this.resourceGroup,
-          this.registryUrl,
-          this.registryUsername,
-          this.registryPassword
-        );
+        await this.appHelper.updateContainerAppRegistryDetails(this.containerAppName, this.resourceGroup, this.registryUrl, this.registryUsername, this.registryPassword);
       }
-      await this.appHelper.updateContainerApp(
-        this.containerAppName,
-        this.resourceGroup,
-        this.commandLineArgs
-      );
+      await this.appHelper.updateContainerApp(this.containerAppName, this.resourceGroup, this.commandLineArgs);
     } else if (this.shouldCreateOrUpdateContainerAppWithUp) {
-      await this.appHelper.createOrUpdateContainerAppWithUp(
-        this.containerAppName,
-        this.resourceGroup,
-        this.commandLineArgs
-      );
+      await this.appHelper.createOrUpdateContainerAppWithUp(this.containerAppName, this.resourceGroup, this.commandLineArgs);
     } else if (this.adminCredentialsProvided && !this.noIngressUpdate) {
-      await this.appHelper.updateContainerAppWithUp(
-        this.containerAppName,
-        this.resourceGroup,
-        this.commandLineArgs,
-        this.ingress,
-        this.targetPort
-      );
+      await this.appHelper.updateContainerAppWithUp(this.containerAppName, this.resourceGroup, this.commandLineArgs, this.ingress, this.targetPort);
     } else {
-      await this.appHelper.updateContainerApp(
-        this.containerAppName,
-        this.resourceGroup,
-        this.commandLineArgs
-      );
-      await this.appHelper.updateContainerAppIngress(
-        this.containerAppName,
-        this.resourceGroup,
-        this.ingress,
-        this.targetPort
-      );
+      await this.appHelper.updateContainerApp(this.containerAppName, this.resourceGroup, this.commandLineArgs);
+      await this.appHelper.updateContainerAppIngress(this.containerAppName, this.resourceGroup, this.ingress, this.targetPort);
     }
     if (this.ingress == "disabled") {
-      await this.appHelper.disableContainerAppIngress(
-        this.containerAppName,
-        this.resourceGroup
-      );
+      await this.appHelper.disableContainerAppIngress(this.containerAppName, this.resourceGroup);
     }
   }
 };
